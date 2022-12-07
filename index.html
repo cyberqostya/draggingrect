@@ -16,7 +16,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100vh;
+        height: calc(var(--vh) * 100);
         width: 100vw;
       }
 
@@ -48,6 +48,11 @@
       <div class="rect">drag me</div>
     </div>
     <script>
+      document.documentElement.style.setProperty(
+        "--vh",
+        `${window.innerHeight * 0.01}px`
+      );
+
       // position type = { x: coord, y: coord }
       // Границы передвижения 80% viewport
       class Border {
