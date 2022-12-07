@@ -39,6 +39,7 @@
         user-select: none;
       }
 
+      /* Для отключения скролла на мобильных */
       .modal {
         position: fixed;
         top: 0;
@@ -48,7 +49,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #ff000011;
+        background-color: #00ff0011;
       }
       .is-locked {
         height: calc(var(--window-inner-height) - 1px);
@@ -63,9 +64,15 @@
       </div>
     </div>
     <script>
+      // Для нормального отображения 100vh без влияния адресной строки
       document.documentElement.style.setProperty(
         "--vh",
         `${window.innerHeight * 0.01}px`
+      );
+      // Для предотвращения скролла на мобильных
+      document.documentElement.style.setProperty(
+        "--window-inner-height",
+        `${window.innerHeight}px`
       );
 
       // position type = { x: coord, y: coord }
@@ -197,6 +204,10 @@
       // Работа
       rect.block.addEventListener("mousedown", startDragging);
       rect.block.addEventListener("touchstart", startDragging);
+
+      document.querySelector(".modal").addEventListener("pointermove", (e) => {
+        e.preventDefault();
+      });
     </script>
   </body>
 </html>
