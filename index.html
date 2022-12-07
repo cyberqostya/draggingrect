@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>отзывчивый DIV</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+      }
+
+      .border {
+        width: 80vw;
+        height: 80vh;
+        border: 5px solid #314159; /* color of Math.PI */
+        background-color: #31415944;
+      }
+
+      .rect {
+        width: 150px;
+        height: 150px;
+        background-color: #b73c58; /* color of 2023 */
+        transform: translateX(0);
+        transform: translateY(0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #fff;
+        font-size: 18px;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="border">
+      <div class="rect">drag me</div>
+    </div>
+    <script>
+      // position type = { x: coord, y: coord }
+      // Границы передвижения 80% viewport
+      class Border {
+        constructor(DOMNode) {
+          this.block = DOMNode;
+          this.borderWidth = parseInt(getComputedStyle(this.block).borderWidth);
+          this.coordData = this.block.getBoundingClientRect();
+          this.fixCoordData();
+        }
+        // Из-за CSS толщины border координаты крайних точек немного изменяются
+        fixCoordData() {
+          const copiedCoordData = JSON.parse(JSON.stringify(this.coordData));
+
+          copiedCoordData.left += this.borderWidth;
+          copiedCoordData.top += this.borderWidth;
+          copiedCoordData.right -= this.borderWidth;
+          copiedCoordData.bottom -= this.borderWidth;
+
+          this.coordData = copiedCoordData;
+        }
+      }
+
+      // Передвигающийся прямоугольник
+      class Rect {
+        constructor(DOMNode) {
+          this.block = DOMNode;
+          this.coordData = this.block.getBoundingClientRect();
+          this.lastPosition = { x: 0, y: 0 };
+        }
+        // Анимация
+        setPosition(position) {
+          this.block.style = `transform: translate(${position.x}px, ${position.y}px)`;
+        }
+        setLastPosition(position) {
+          this.lastPosition = position;
+        }
+      }
+
+      // Касание по прямоугольнику
+      class Touch {
+        constructor() {
+          this.startPosition = { x: 0, y: 0 };
+        }
+
+        setStartPosition(position) {
+          this.startPosition = position;
+        }
+
+        // В разных местах clientX и clientY при событии касания и мышки
+        getEvent(event) {
+          return event.changedTouches ? event.changedTouches[0] : event;
+        }
+      }
+
+      const border = new Border(document.querySelector(".border"));
+      const rect = new Rect(document.querySelector(".rect"));
+      const touch = new Touch();
+
+      // Начало перемещения
+      function startDragging(deviceEvent) {
+        const event = touch.getEvent(deviceEvent); // Клик или Касание
+
+        touch.setStartPosition({ x: event.clientX, y: event.clientY });
+
+        document.body.addEventListener("mousemove", move);
+        document.body.addEventListener("mouseup", stopDragging);
+
+        document.body.addEventListener("touchmove", move);
+        document.body.addEventListener("touchend", stopDragging);
+      }
+
+      // Остановка перемещения
+      function stopDragging(deviceEvent) {
+        const event = touch.getEvent(deviceEvent); // Клик или Касание
+
+        rect.setLastPosition(
+          checkCollision({
+            x: event.clientX - touch.startPosition.x + rect.lastPosition.x,
+            y: event.clientY - touch.startPosition.y + rect.lastPosition.y,
+          })
+        );
+
+        document.body.removeEventListener("mousemove", move);
+        document.body.removeEventListener("mouseup", stopDragging);
+
+        document.body.removeEventListener("touchmove", move);
+        document.body.removeEventListener("touchend", stopDragging);
+      }
+
+      // Передвижение
+      function move(deviceEvent) {
+        const event = touch.getEvent(deviceEvent); // Клик или Касание
+
+        rect.setPosition(
+          checkCollision({
+            x: event.clientX - touch.startPosition.x + rect.lastPosition.x,
+            y: event.clientY - touch.startPosition.y + rect.lastPosition.y,
+          })
+        );
+      }
+
+      // Проверка столкновения с границей
+      function checkCollision(relativePosition) {
+        const checkedPosition = {
+          x:
+            rect.coordData.left - relativePosition.x > border.coordData.left
+              ? 0 // position относительно родителя
+              : rect.coordData.right + relativePosition.x >
+                border.coordData.right
+              ? border.coordData.right -
+                border.coordData.left -
+                rect.coordData.width
+              : relativePosition.x,
+          y:
+            rect.coordData.top - relativePosition.y > border.coordData.top
+              ? 0 // position относительно родителя
+              : rect.coordData.bottom + relativePosition.y >
+                border.coordData.bottom
+              ? border.coordData.bottom -
+                border.coordData.top -
+                rect.coordData.height
+              : relativePosition.y,
+        };
+        return checkedPosition;
+      }
+
+      // Работа
+      rect.block.addEventListener("mousedown", startDragging);
+      rect.block.addEventListener("touchstart", startDragging);
+    </script>
+  </body>
+</html>
