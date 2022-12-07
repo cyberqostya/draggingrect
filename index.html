@@ -49,7 +49,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #00ff0011;
+        background-color: #0000ff11;
       }
       .is-locked {
         height: calc(var(--window-inner-height) - 1px);
@@ -57,7 +57,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="is-locked">
     <div class="modal">
       <div class="border">
         <div class="rect">drag me</div>
@@ -74,6 +74,7 @@
         "--window-inner-height",
         `${window.innerHeight}px`
       );
+      document.documentElement.classList.add("is-locked");
 
       // position type = { x: coord, y: coord }
       // Границы передвижения 80% viewport
