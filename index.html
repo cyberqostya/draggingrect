@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>отзывчивый DIV</title>
+    <title>DRAGGABLE</title>
     <style>
       * {
         margin: 0;
@@ -13,23 +13,24 @@
       }
 
       body {
-        height: calc(var(--vh) * 100);
+        height: calc(
+          var(--window-inner-height)
+        ); /* переменная задастся через JS для истинной 100vh */
         width: 100vw;
+        overflow: hidden;
       }
 
       .border {
         width: 80vw;
         height: 80vh;
         border: 5px solid #314159; /* color of Math.PI */
-        background-color: #31415944;
+        background-color: #31415926;
       }
 
       .rect {
         width: 150px;
         height: 150px;
-        background-color: #b73c58; /* color of 2023 */
-        transform: translateX(0);
-        transform: translateY(0);
+        background-color: #b73c58; /* color of 2023 PANTONE */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -50,30 +51,20 @@
         align-items: center;
         justify-content: center;
       }
-      .is-locked {
-        height: calc(var(--window-inner-height) - 1px);
-        overflow: hidden;
-      }
     </style>
   </head>
-  <body class="is-locked">
+  <body>
     <div class="modal">
       <div class="border">
         <div class="rect">drag me</div>
       </div>
     </div>
     <script>
-      // Для нормального отображения 100vh без влияния адресной строки
-      document.documentElement.style.setProperty(
-        "--vh",
-        `${window.innerHeight * 0.01}px`
-      );
       // Для предотвращения скролла на мобильных
       document.documentElement.style.setProperty(
         "--window-inner-height",
         `${window.innerHeight}px`
       );
-      document.documentElement.classList.add("is-locked");
 
       // position type = { x: coord, y: coord }
       // Границы передвижения 80% viewport
@@ -102,14 +93,16 @@
         constructor(DOMNode) {
           this.block = DOMNode;
           this.coordData = this.block.getBoundingClientRect();
+          this.position = { x: 0, y: 0 };
           this.lastPosition = { x: 0, y: 0 };
         }
         // Анимация
         setPosition(position) {
-          this.block.style = `transform: translate(${position.x}px, ${position.y}px)`;
+          this.position = position;
+          this._render();
         }
-        setLastPosition(position) {
-          this.lastPosition = position;
+        _render() {
+          this.block.style = `transform: translate(${this.position.x}px, ${this.position.y}px)`;
         }
       }
 
@@ -147,15 +140,8 @@
       }
 
       // Остановка перемещения
-      function stopDragging(deviceEvent) {
-        const event = touch.getEvent(deviceEvent); // Клик или Касание
-
-        rect.setLastPosition(
-          checkCollision({
-            x: event.clientX - touch.startPosition.x + rect.lastPosition.x,
-            y: event.clientY - touch.startPosition.y + rect.lastPosition.y,
-          })
-        );
+      function stopDragging() {
+        rect.lastPosition = rect.position;
 
         document.body.removeEventListener("mousemove", move);
         document.body.removeEventListener("mouseup", stopDragging);
@@ -178,24 +164,24 @@
 
       // Проверка столкновения с границей
       function checkCollision(relativePosition) {
+        const maxXrelativePosition =
+          border.coordData.right - border.coordData.left - rect.coordData.width;
+        const maxYrelativePosition =
+          border.coordData.bottom -
+          border.coordData.top -
+          rect.coordData.height;
         const checkedPosition = {
           x:
-            rect.coordData.left - relativePosition.x > border.coordData.left
+            relativePosition.x < 0
               ? 0 // position относительно родителя
-              : rect.coordData.right + relativePosition.x >
-                border.coordData.right
-              ? border.coordData.right -
-                border.coordData.left -
-                rect.coordData.width
+              : relativePosition.x > maxXrelativePosition
+              ? maxXrelativePosition
               : relativePosition.x,
           y:
-            rect.coordData.top - relativePosition.y > border.coordData.top
-              ? 0 // position относительно родителя
-              : rect.coordData.bottom + relativePosition.y >
-                border.coordData.bottom
-              ? border.coordData.bottom -
-                border.coordData.top -
-                rect.coordData.height
+            relativePosition.y < 0
+              ? 0
+              : relativePosition.y > maxYrelativePosition
+              ? maxYrelativePosition
               : relativePosition.y,
         };
         return checkedPosition;
@@ -204,10 +190,6 @@
       // Работа
       rect.block.addEventListener("mousedown", startDragging);
       rect.block.addEventListener("touchstart", startDragging);
-
-      document.querySelector(".modal").addEventListener("pointermove", (e) => {
-        e.preventDefault();
-      });
     </script>
   </body>
 </html>
